@@ -1,0 +1,93 @@
+/*
+ * Design tokens.
+ * Every size, spacing, font-size and line-height is a multiple of 4 (mostly 8),
+ * except body text, which stays at the design's 14/22.
+ * Letter-spacing is kept at the design's optical values.
+ */
+:root {
+  /* Spacing — named by pixel value */
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-64: 64px;
+  --space-72: 72px;
+  --space-96: 96px;
+  --space-112: 112px;
+  --space-128: 128px;
+  --space-160: 160px;
+
+  /* Colour */
+  --color-white: #fff;
+  --color-navy: #03045e;
+  --text-label: rgb(255 255 255 / 0.72);
+  --text-muted: rgb(255 255 255 / 0.4);
+  --text-hover: rgb(255 255 255 / 0.96);
+
+  /* Font families */
+  --font-sans: 'Google Sans Flex', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Azeret Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Type scale — size / line-height / tracking */
+  --type-display-size: 56px;
+  --type-display-lh: 64px;
+  --type-display-tracking: -1px;
+
+  --type-tagline-size: 40px;
+  --type-tagline-lh: 48px;
+  --type-tagline-tracking: -2px;
+
+  --type-label-size: 12px;
+  --type-label-lh: 24px;
+  --type-label-tracking: 0.6px;
+
+  --type-body-size: 14px;
+  --type-body-lh: 22px;
+  --type-body-tracking: 0.2px;
+
+  font-family: var(--font-sans);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  min-width: 320px;
+  background: var(--color-white);
+}
+
+h1,
+p,
+ul {
+  margin: 0;
+  padding: 0;
+}
+
+ul {
+  list-style: none;
+}
+
+img {
+  display: block;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}

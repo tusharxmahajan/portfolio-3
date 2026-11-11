@@ -1,0 +1,358 @@
+/*
+ * Hero — mobile-first.
+ *   base      < 384px   single column, centred
+ *   ≥ 384px             larger headline
+ *   ≥ 640px   tablet    headline on top, meta in a 2 × 2 grid
+ *   ≥ 1120px  desktop   Figma artboard layout (meta around the headline, connector lines)
+ */
+
+.hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: var(--space-112) 0 var(--space-160);
+  overflow: hidden;
+  isolation: isolate;
+  color: var(--color-white);
+  background: var(--color-white);
+}
+
+/* Elliptical "horizon" — radii and centre are relative to the hero box, so the
+   curve keeps the artboard's proportions at every viewport size.
+   --glow-size is animated by useHeroIntro (0% → 103.78%) to grow the gradient from its centre. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(
+      var(--glow-size, 103.78%) var(--glow-size, 103.78%) at 50% -3.78%,
+      rgb(3 4 94) 0%,
+      rgb(3 19 105) 10%,
+      rgb(3 33 116) 20%,
+      rgb(2 62 138) 40%,
+      rgb(1 91 160) 57.5%,
+      rgb(0 119 182) 75%,
+      rgb(0 150 199) 87.5%,
+      rgb(0 180 216) 93.75%,
+      rgb(18 186 219) 94.531%,
+      rgb(36 191 222) 95.313%,
+      rgb(72 202 228) 96.875%,
+      rgb(108 213 234) 97.656%,
+      rgb(144 224 239) 98.438%,
+      rgb(173 232 244) 99.219%,
+      rgb(214 244 250) 99.609%,
+      rgb(255 255 255) 100%
+    ),
+    var(--color-white);
+}
+.band {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: var(--space-24);
+  width: 100%;
+  padding-inline: var(--space-24);
+  text-align: center;
+}
+
+/* ---------- Headline ---------- */
+
+.title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: var(--space-16);
+  font-weight: 400;
+}
+
+.headline {
+  font-family: var(--font-sans);
+  font-size: 32px;
+  line-height: 40px;
+  letter-spacing: var(--type-display-tracking);
+  color: var(--color-white);
+}
+
+.tagline {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  line-height: 32px;
+  letter-spacing: -1px;
+  color: transparent;
+  background-image: linear-gradient(to top, rgb(255 255 255 / 0) 0%, rgb(255 255 255) 169.79%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* The 8px cyan dot sits on the tittle of the "i" in "dezine".
+   --dot-x / --dot-y are the tittle's centre, measured from the glyph box at each headline
+   size. Google Sans Flex uses optical sizing, so the "i" changes proportion per size and
+   each step needs its own values. These are optical alignments, not grid spacing. */
+.dotted {
+  --dot-x: 3.68px; /* 32px headline */
+  --dot-y: 9.57px;
+  position: relative;
+}
+
+.dot {
+  position: absolute;
+  left: calc(var(--dot-x) - var(--space-4));
+  top: calc(var(--dot-y) - var(--space-4));
+  width: var(--space-8);
+  height: var(--space-8);
+  pointer-events: none;
+}
+
+/* ---------- Meta blocks ---------- */
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-lh);
+  letter-spacing: var(--type-label-tracking);
+  color: var(--text-label);
+}
+
+.body {
+  font-family: var(--font-sans);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  letter-spacing: var(--type-body-tracking);
+  color: var(--text-muted);
+  text-wrap: balance;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tags,
+.tag {
+  column-gap: var(--space-8);
+}
+
+.tag {
+  display: inline-flex;
+}
+
+.role {
+  column-gap: var(--space-4);
+}
+
+.linkList {
+  column-gap: var(--space-12);
+}
+
+.link {
+  border-radius: var(--space-4);
+  transition: color 160ms ease;
+}
+
+.link:hover,
+.link:focus-visible {
+  color: var(--text-hover);
+}
+
+.link:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: var(--space-4);
+}
+
+/* ---------- Connector lines (desktop only) ---------- */
+
+.line {
+  display: none;
+  align-items: center;
+  min-width: 0;
+  height: var(--space-32);
+  /* Lines keep their native 446px size; on narrower screens the outer, faded end is clipped. */
+  overflow-x: clip;
+}
+
+.line svg {
+  flex: none;
+  max-width: none;
+}
+
+.lineLeft {
+  justify-content: flex-end;
+}
+
+.lineRight {
+  justify-content: flex-start;
+}
+
+.lineRight svg {
+  transform: scaleX(-1);
+}
+
+/* ---------- ≥ 384px ---------- */
+
+@media (min-width: 384px) {
+  .headline {
+    font-size: 40px;
+    line-height: 48px;
+  }
+
+  .tagline {
+    font-size: 28px;
+    line-height: 36px;
+  }
+
+  .dotted {
+    --dot-x: 4.91px; /* 40px headline */
+    --dot-y: 12.28px;
+  }
+}
+
+/* ---------- Tablet ≥ 640px ---------- */
+
+@media (min-width: 640px) {
+  .hero {
+    padding: var(--space-128) 0 var(--space-160);
+  }
+
+  .band {
+    /* Right column hugs its content so the longer left copy gets the room. */
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--space-48);
+    row-gap: var(--space-32);
+    max-width: 880px;
+    padding-inline: var(--space-40);
+    text-align: left;
+  }
+
+  .title {
+    grid-column: 1 / -1;
+    margin-bottom: var(--space-32);
+  }
+
+  .headline {
+    font-size: var(--type-display-size);
+    line-height: var(--type-display-lh);
+    white-space: nowrap;
+  }
+
+  .tagline {
+    font-size: var(--type-tagline-size);
+    line-height: var(--type-tagline-lh);
+    letter-spacing: var(--type-tagline-tracking);
+    white-space: nowrap;
+  }
+
+  .dotted {
+    --dot-x: 5.77px; /* 56px headline */
+    --dot-y: 16.75px;
+  }
+
+  .meta {
+    align-items: flex-start;
+  }
+
+  .row {
+    justify-content: flex-start;
+  }
+
+  .end {
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .end .row {
+    justify-content: flex-end;
+  }
+
+  .hi {
+    grid-area: 2 / 1;
+  }
+
+  .links {
+    grid-area: 2 / 2;
+  }
+
+  .work {
+    grid-area: 3 / 1;
+  }
+
+  .previously {
+    grid-area: 3 / 2;
+  }}
+
+/* ---------- Desktop ≥ 1120px (Figma artboard: 1512 × 1004) ---------- */
+
+@media (min-width: 1120px) {
+  .hero {
+    padding: var(--space-96) 0;
+  }
+
+  .band {
+    /* Equal 1fr rows keep the connector lines on the band's vertical centre. */
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-rows: 1fr auto 1fr;
+    column-gap: var(--space-40);
+    row-gap: var(--space-24);
+    max-width: 1512px;
+    padding-inline: var(--space-40);
+    /* Lifts the band's centre 112px above the viewport centre. */
+    margin-bottom: calc(2 * var(--space-112));
+  }
+
+  .title {
+    grid-area: 2 / 2;
+    /* 112px headline block sits on the 32px line row, centred. */
+    margin: calc(-1 * var(--space-40)) 0;
+  }
+
+  .meta {
+    padding-inline: var(--space-32);
+    white-space: nowrap;
+  }
+
+  .row {
+    flex-wrap: nowrap;
+  }
+
+  .hi {
+    grid-area: 1 / 1 / 2 / 3;
+    align-self: end;
+  }
+
+  .links {
+    grid-area: 1 / 2 / 2 / 4;
+    align-self: end;
+  }
+
+  .work {
+    grid-area: 3 / 1 / 4 / 3;
+    align-self: start;
+  }
+
+  .previously {
+    grid-area: 3 / 2 / 4 / 4;
+    align-self: start;
+  }
+
+  .line {
+    display: flex;
+  }
+
+  .lineLeft {
+    grid-area: 2 / 1;
+  }
+
+  .lineRight {
+    grid-area: 2 / 3;
+  }
+}
