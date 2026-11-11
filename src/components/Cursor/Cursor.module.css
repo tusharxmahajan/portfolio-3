@@ -1,0 +1,71 @@
+/* Custom cursor — positioned and animated by Cursor.jsx. Hidden until the first pointer move. */
+.cursor {
+  --dot: var(--space-4);
+  --ring: 80px;
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  pointer-events: none;
+  visibility: hidden;
+  color: var(--color-white);
+  transition: color 250ms linear;
+}
+
+/* Over light backgrounds (the gradient's pale rim and the white below it). */
+.light {
+  color: var(--color-navy);
+}
+
+.dot,
+.ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+.dot {
+  width: var(--dot);
+  height: var(--dot);
+  margin: calc(var(--dot) / -2) 0 0 calc(var(--dot) / -2);
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ring {
+  width: var(--ring);
+  height: var(--ring);
+  margin: calc(var(--ring) / -2) 0 0 calc(var(--ring) / -2);
+}
+
+.ring svg {
+  display: block;
+}
+
+.ring circle {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.5;
+  opacity: 0.2;
+}
+
+/* Set on <html> by Cursor.jsx once the custom cursor is running: hide the system pointer.
+   Where the custom cursor fades out (data-cursor="hide"), the system pointer comes back. */
+:global(html).active,
+:global(html).active * {
+  cursor: none !important;
+}
+
+:global(html).active [data-cursor='hide'],
+:global(html).active [data-cursor='hide'] * {
+  cursor: revert !important;
+}
+
+/* Touch / coarse pointers: no custom cursor. */
+@media (hover: none), (pointer: coarse) {
+  .cursor {
+    display: none;
+  }
+}

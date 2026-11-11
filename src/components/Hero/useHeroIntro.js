@@ -2,6 +2,7 @@ import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { CustomEase } from 'gsap/CustomEase'
 import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin'
+import { GRADIENT_SIZE } from './gradient.js'
 
 gsap.registerPlugin(useGSAP, CustomEase, DrawSVGPlugin)
 
@@ -21,8 +22,6 @@ const T = {
   overlap: 0.6, // after the gradient, each step starts this much before the previous one ends
 }
 
-// Final gradient size — must match the default of --glow-size in Hero.module.css.
-const GRADIENT_SIZE = '103.78%'
 const BLUR = 'blur(16px)'
 
 const DESKTOP = '(min-width: 1120px)'

@@ -4,11 +4,10 @@ import ConnectorLine from './ConnectorLine.jsx'
 import styles from './Hero.module.css'
 import { useHeroIntro } from './useHeroIntro.js'
 
-// TODO: replace the placeholder hrefs with your real links.
 const LINKS = [
-  { label: 'Resume', href: '#' },
-  { label: 'Email', href: 'mailto:hello@example.com' },
-  { label: 'LinkedIn', href: 'https://www.linkedin.com/' },
+  { label: 'Resume', href: 'https://drive.google.com/file/d/155wBiHG6luw6vYtf-omzOU-cB0NCHOEw/view' },
+  { label: 'Email', href: 'mailto:tusharxmahajan@gmail.com' },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/tusharxmahajan/' },
 ]
 
 const FOCUS_AREAS = ['B2B SaaS', 'heavy data', 'complex workflows']
