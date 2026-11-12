@@ -1,0 +1,335 @@
+/*
+ * Selected work — mobile-first, same breakpoints as the hero.
+ *   base      < 640px   stacked: summary, then the media one under another
+ *   ≥ 640px   tablet    description and button side by side, media scroll as a ticker
+ *   ≥ 1120px  desktop   larger type and media
+ */
+
+/* Above the hero's content, which stays pinned underneath for the rest of the page. */
+.work {
+  position: relative;
+  z-index: 2;
+  /* (The header adds 24px of its own above the title: 96px in all.) */
+  padding: var(--space-72) 0 var(--space-128);
+  color: var(--ink);
+  background: var(--color-white);
+}
+
+/* Side margins line up with the hero's side content at every breakpoint
+   (its band's max-width and padding, plus the meta blocks' own padding on desktop). */
+.inner {
+  margin-inline: auto;
+  padding-inline: var(--space-24);
+}
+
+/* Title + connector line: one block, full width of the section. It sticks to the top of the
+   screen for the rest of the section, over the projects, and on the way there its title
+   shrinks (see the end of this file). Its white background is drawn by the line
+   (HeadingLine's fill), down to the line itself — so under the notch the projects show. */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: var(--space-24);
+  margin-bottom: var(--space-64);
+}
+
+/* 32/40 at every size (shrinking to 14/22 as the header sticks). Filled with a diagonal cyan → navy gradient running top-left to
+   bottom-right; the box hugs the words so the gradient spans just the title. */
+.heading {
+  font-family: var(--font-sans);
+  font-size: 32px;
+  line-height: 40px;
+  letter-spacing: var(--type-display-tracking);
+  font-weight: 400;
+  text-align: center;
+  color: transparent;
+  background-image: linear-gradient(101deg, var(--color-cyan) 0%, var(--color-navy) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* The line (HeadingLine.jsx) spans the section's full width, 16px below the title (8px once
+   the title has shrunk). Stacked under the title, so its fill (the header's background)
+   stays behind it. */
+.headingLine {
+  position: relative;
+  z-index: -1;
+  align-self: stretch;
+  margin-top: var(--space-16);
+}
+
+.headingLine svg {
+  display: block;
+}
+
+.list {
+  display: grid;
+  /* minmax(0, …): the tickers' long tracks mustn't widen the column. */
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: var(--space-96);
+}
+
+/* Empty slot, first in the list. */
+.placeholder {
+  height: 800px;
+}
+
+/* ---------- Project ---------- */
+
+.project {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  scroll-margin-top: var(--space-128); /* clear of the sticky header */
+}
+
+.tag,
+.year,
+.capabilities,
+.ctaLabel {
+  font-family: var(--font-mono);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-lh);
+  letter-spacing: var(--type-label-tracking);
+}
+
+.tag {
+  padding: var(--space-4) var(--space-12);
+  margin-bottom: var(--space-12);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--ink-faint);
+  color: var(--ink-muted);
+}
+
+.title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--space-12);
+  font-family: var(--font-sans);
+  font-size: 40px;
+  line-height: 48px;
+  letter-spacing: var(--type-display-tracking);
+  font-weight: 400;
+}
+
+.year {
+  color: var(--ink-muted);
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-24);
+  width: 100%;
+  margin-top: var(--space-16);
+}
+
+.description {
+  max-width: 720px;
+  font-family: var(--font-sans);
+  font-size: 20px;
+  line-height: 28px;
+  letter-spacing: 0;
+  text-wrap: pretty;
+}
+
+/* Pill button: dark label inside a thin outer ring. */
+.cta {
+  flex: none;
+  display: inline-flex;
+  padding: var(--space-4);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--ink-faint);
+}
+
+.ctaLabel {
+  padding: var(--space-4) var(--space-16);
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--color-white);
+  transition: background-color 200ms ease;
+}
+
+.cta:hover .ctaLabel,
+.cta:focus-visible .ctaLabel {
+  background: var(--ink-hover);
+}
+
+.cta:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: var(--space-4);
+}
+
+.capabilities {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--space-8);
+  margin-top: var(--space-16);
+  color: var(--ink-muted);
+}
+
+.capabilities li + li::before {
+  content: '·';
+  margin-right: var(--space-8);
+}
+
+/* ---------- Media ---------- */
+
+.mediaLink {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-24);
+}
+
+.media {
+  --ticker-gap: var(--space-8);
+}
+
+/* Phones: one card under another, full width, each at its own aspect ratio. */
+.mediaGroup {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.card {
+  flex: none;
+  width: 100%;
+  height: auto;
+  border-radius: var(--space-12);
+  background: var(--ink-faint);
+}
+
+/* ---------- Tablet ≥ 640px ---------- */
+
+@media (min-width: 640px) {
+  .work {
+    padding: calc(var(--space-128) - var(--space-24)) 0 var(--space-160);
+  }
+
+  .inner {
+    max-width: 880px;
+    padding-inline: var(--space-40);
+  }
+
+  .header {
+    margin-bottom: var(--space-96);
+  }
+
+  .list {
+    row-gap: var(--space-128);
+  }
+
+  .title {
+    font-size: var(--type-display-size);
+    line-height: var(--type-display-lh);
+  }
+
+  .summary {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-32);
+  }
+
+  .description {
+    line-height: var(--space-32);
+  }
+
+  .media {
+    --ticker-gap: var(--space-12);
+  }
+
+  .mediaGroup {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .card {
+    width: auto;
+    height: 440px;
+  }
+
+  /* Reduced motion: a still row you can scroll sideways. */
+  .media:not([data-running]) {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+}
+
+/* ---------- Desktop ≥ 1120px ---------- */
+
+@media (min-width: 1120px) {
+  .inner {
+    max-width: 1512px;
+    padding-inline: var(--space-72); /* hero band 40 + meta 32 */
+  }
+
+  .header {
+    margin-bottom: var(--space-128);
+  }
+
+  .list {
+    row-gap: var(--space-160);
+  }
+
+  .title {
+    font-size: 72px;
+    line-height: 80px;
+    letter-spacing: -2px;
+  }
+
+  .card {
+    height: 600px;
+  }
+}
+
+/* ---------- Header shrink ---------- */
+
+/* While the header's top travels from 10% down the screen to the top (where it sticks), the
+   title shrinks from 32/40 to body-text size, 14/22, and the line closes in on it, 16 → 8px —
+   scrubbed by the scroll. The line's raised part follows the title (HeadingLine.jsx).
+   The timeline comes from the marker just above the header, which keeps scrolling when the
+   header sticks. It has no height, so its "cover" range spans exactly one screen height:
+   90% → 100% is its top going from 10% of the screen to 0.
+   (Browsers without scroll-driven animations keep the full-size title.) */
+@supports (animation-timeline: view()) {
+  .work {
+    timeline-scope: --work-header;
+  }
+
+  .headerStart {
+    view-timeline: --work-header block;
+  }
+
+  .heading {
+    animation: heading-shrink linear both;
+    animation-timeline: --work-header;
+    animation-range: cover 90% cover 100%;
+  }
+
+  .headingLine {
+    animation: heading-line-close linear both;
+    animation-timeline: --work-header;
+    animation-range: cover 90% cover 100%;
+  }
+}
+
+@keyframes heading-shrink {
+  to {
+    font-size: var(--type-body-size);
+    line-height: var(--type-body-lh);
+    letter-spacing: var(--type-body-tracking);
+  }
+}
+
+@keyframes heading-line-close {
+  to {
+    margin-top: var(--space-8);
+  }
+}

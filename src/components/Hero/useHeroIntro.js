@@ -19,6 +19,8 @@ const T = {
   lines: 2,
   meta: 1,
   metaStagger: 0.24,
+  logos: 1.2,
+  logoStagger: 0.08,
   overlap: 0.6, // after the gradient, each step starts this much before the previous one ends
 }
 
@@ -45,38 +47,48 @@ function whenFontsReady(timeoutMs = 1500) {
 
 /**
  * Hero intro: gradient grows from its centre → headline blur-in (overlapping the gradient's
- * settle) → connector lines draw → meta fade-in.
- * Elements are found by data attributes inside `scope`:
- *   data-anim="backdrop" | "headline" | "line", and data-meta="<key>" for the meta blocks.
+ * settle) → connector lines draw → meta fade-in → logos fade in out of a blur, one by one.
+ * Content is found by data attributes inside `scope`:
+ *   data-anim="headline" | "line" | "logos" (the ticker; its <img>s are animated), and
+ *   data-meta="<key>" for the meta blocks.
+ * The gradient lives outside it: `backdropRef` (the gradient) and `horizonRef` (its bottom
+ * curve, drawn over the content) grow together so they always line up.
  * Without JS, or with reduced motion, the hero simply renders in its final state.
  */
-export function useHeroIntro(scope) {
+export function useHeroIntro(scope, { backdropRef, horizonRef }) {
   useGSAP(
     () => {
       if (window.matchMedia(REDUCED_MOTION).matches) return
 
       const q = gsap.utils.selector(scope)
-      const backdrop = q('[data-anim="backdrop"]')[0]
+      const glows = [backdropRef.current, horizonRef.current]
       const headlines = q('[data-anim="headline"]')
       const lines = q('[data-anim="line"]')
       const stems = lines.map((svg) => svg.querySelector('[data-part="stem"]'))
       const branches = lines.flatMap((svg) => [...svg.querySelectorAll('[data-part="branch"]')])
       const metaOrder = window.matchMedia(TABLET_UP).matches ? META_ORDER_GRID : META_ORDER_STACK
       const metas = metaOrder.map((key) => q(`[data-meta="${key}"]`)[0])
+      // The ticker holds the logos twice (the second set is its loop copy).
+      const logos = q('[data-anim="logos"] img')
+      const logosPerSet = logos.length / 2
       const showLines = window.matchMedia(DESKTOP).matches
 
       const tl = gsap.timeline({
         paused: true,
         onComplete: () => {
           // Hand back to the static CSS: no lingering filters, clips or inline styles.
-          gsap.set([backdrop, ...headlines, ...stems, ...branches, ...metas], { clearProps: 'all' })
+          gsap.set([...glows, ...headlines, ...stems, ...branches, ...metas], {
+            clearProps: 'all',
+          })
+          // The logos keep their transforms: the ticker bends them along the gradient's curve.
+          gsap.set(logos, { clearProps: 'opacity,filter' })
         },
       })
 
       // 1. Gradient: its size grows from 0, so every colour band travels out from the
       //    gradient's centre to its final position. Starts from rest, settles gently.
       tl.fromTo(
-        backdrop,
+        glows,
         { '--glow-size': '0%' },
         { '--glow-size': GRADIENT_SIZE, duration: T.gradient, ease: 'glowSettle' },
       )
@@ -126,6 +138,21 @@ export function useHeroIntro(scope) {
         `-=${T.overlap}`,
       )
 
+      // 5. Logos (already scrolling) fade in out of a blur, left to right. Each logo and its
+      //    loop copy reveal together.
+      tl.fromTo(
+        logos,
+        { opacity: 0, filter: BLUR },
+        {
+          opacity: 1,
+          filter: 'blur(0px)',
+          duration: T.logos,
+          stagger: (i) => (i % logosPerSet) * T.logoStagger,
+          ease: 'power2.out',
+        },
+        `-=${T.overlap}`,
+      )
+
       let cancelled = false
       whenFontsReady().then(() => {
         if (!cancelled) tl.play()
@@ -135,6 +162,6 @@ export function useHeroIntro(scope) {
         cancelled = true
       }
     },
-    { scope },
+    { scope, dependencies: [backdropRef, horizonRef] },
   )
 }

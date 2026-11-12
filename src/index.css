@@ -14,6 +14,7 @@
   --space-32: 32px;
   --space-40: 40px;
   --space-48: 48px;
+  --space-56: 56px;
   --space-64: 64px;
   --space-72: 72px;
   --space-96: 96px;
@@ -24,9 +25,15 @@
   /* Colour */
   --color-white: #fff;
   --color-navy: #03045e;
+  --color-cyan: #00b4d8;
   --text-label: rgb(255 255 255 / 0.72);
   --text-muted: rgb(255 255 255 / 0.4);
   --text-hover: rgb(255 255 255 / 0.96);
+  /* Ink — text on light backgrounds */
+  --ink: var(--color-navy);
+  --ink-hover: #023e8a;
+  --ink-muted: rgb(3 4 94 / 0.56);
+  --ink-faint: rgb(3 4 94 / 0.12);
 
   /* Font families */
   --font-sans: 'Google Sans Flex', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -73,13 +80,17 @@ body {
 }
 
 h1,
+h2,
+h3,
 p,
-ul {
+ul,
+ol {
   margin: 0;
   padding: 0;
 }
 
-ul {
+ul,
+ol {
   list-style: none;
 }
 

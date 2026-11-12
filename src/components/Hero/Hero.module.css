@@ -6,8 +6,25 @@
  *   ≥ 1120px  desktop   Figma artboard layout (meta around the headline, connector lines)
  */
 
+/*
+ * Three layers share the hero's box (see Hero.jsx):
+ *   .backdrop  z 0  the gradient — scrolls with the page
+ *   .hero      z 1  the content — sticky, holds still
+ *   .horizon   z 2  the gradient's bottom curve — scrolls with the backdrop, over the content
+ * The backdrop and horizon follow the section in the flow and pull back up over it by its
+ * height (--hero-h, set by Hero.jsx), so all three line up at rest.
+ */
+
+/* Parallax: the content scrolls at a fraction of the page's speed (--parallax-speed), so
+   the gradient — and its curve — overtake it. It's sticky (holding still) plus a scroll-
+   linked drift upward. A hero taller than the viewport first scrolls normally until its
+   bottom edge is in view; the parallax starts from there. */
 .hero {
-  position: relative;
+  --parallax-speed: 0.3;
+  --hero-overflow: max(0px, var(--hero-h, 100svh) - 100svh);
+  position: sticky;
+  top: calc(-1 * var(--hero-overflow));
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -18,16 +35,31 @@
   overflow: hidden;
   isolation: isolate;
   color: var(--color-white);
-  background: var(--color-white);
 }
 
-/* Elliptical "horizon" — radii and centre are relative to the hero box, so the
-   curve keeps the artboard's proportions at every viewport size.
+/* (Browsers without scroll-driven animations keep the content still.) */
+@supports (animation-timeline: scroll()) {
+  .hero {
+    animation: hero-parallax linear both;
+    animation-timeline: scroll(root);
+    animation-range: var(--hero-overflow) calc(var(--hero-overflow) + var(--hero-h, 100svh));
+  }
+}
+
+@keyframes hero-parallax {
+  to {
+    transform: translateY(calc(-1 * var(--parallax-speed) * var(--hero-h, 100svh)));
+  }
+}
+
+/* Elliptical gradient — radii and centre are relative to the hero's box, so the curve keeps
+   the artboard's proportions at every viewport size.
    --glow-size is animated by useHeroIntro (0% → 103.78%) to grow the gradient from its centre. */
 .backdrop {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
+  position: relative;
+  z-index: 0;
+  height: var(--hero-h, 100svh);
+  margin-top: calc(-1 * var(--hero-h, 100svh));
   background:
     radial-gradient(
       var(--glow-size, 103.78%) var(--glow-size, 103.78%) at 50% -3.78%,
@@ -50,6 +82,63 @@
     ),
     var(--color-white);
 }
+
+/* The horizon: the gradient's bottom curve — its cyan rim and the white beyond — drawn
+   again above the content. It moves with the backdrop, with the same geometry and colours,
+   so the two always read as one gradient; the content just slips under its curve.
+   Inside 86% of the radius it's transparent (and clipped away, so the content below stays
+   clickable); from there it fades in to fully opaque by the cyan band, so content passing
+   under it fades out. The fade is split into short steps so the browser's colour/alpha
+   blending can't drift from the backdrop. */
+.horizon {
+  position: relative;
+  z-index: 2;
+  height: var(--hero-h, 100svh);
+  margin-top: calc(-1 * var(--hero-h, 100svh));
+  clip-path: url(#horizon-hit);
+  background: radial-gradient(
+    var(--glow-size, 103.78%) var(--glow-size, 103.78%) at 50% -3.78%,
+    rgb(0 146 197 / 0) 86%,
+    rgb(0 150 199 / 0.19) 87.5%,
+    rgb(0 158 203 / 0.4) 89.063%,
+    rgb(0 165 208 / 0.6) 90.625%,
+    rgb(0 173 212 / 0.8) 92.188%,
+    rgb(0 180 216) 93.75%,
+    rgb(18 186 219) 94.531%,
+    rgb(36 191 222) 95.313%,
+    rgb(72 202 228) 96.875%,
+    rgb(108 213 234) 97.656%,
+    rgb(144 224 239) 98.438%,
+    rgb(173 232 244) 99.219%,
+    rgb(214 244 250) 99.609%,
+    rgb(255 255 255) 100%
+  );
+}
+
+.horizon svg {
+  position: absolute;
+}
+
+/* The horizon fades in as you scroll: transparent at the top of the page, fully opaque once
+   you've scrolled half the hero's height — so the content is enveloped progressively.
+   (Browsers without scroll-driven animations keep it opaque throughout.) */
+@supports (animation-timeline: scroll()) {
+  .horizon {
+    animation: horizon-in linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0px calc(var(--hero-h, 100svh) * 0.5);
+  }
+}
+
+@keyframes horizon-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .band {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -196,6 +285,47 @@
 
 .lineRight svg {
   transform: scaleX(-1);
+}
+
+/* ---------- Logo ticker (inside the gradient, below the band) ---------- */
+
+/* The logos rise along the gradient's curve towards the screen edges (Hero.jsx) — by up to
+   about a quarter of the hero's height, tilted. The ticker clips to its box (and its edge
+   fade), so the box reaches that far up over the content above, without taking its space or
+   its clicks; the row itself runs along the box's bottom edge. */
+.logos {
+  --curve-room: calc(0.32 * var(--hero-h, 100svh));
+  --ticker-gap: var(--space-72);
+  width: 100%;
+  padding-top: var(--curve-room);
+  margin-top: calc(var(--space-64) - var(--curve-room));
+  /* Lowered 88px from its place in the layout, nearer the gradient's rim. (The curve is
+     measured from where the row ends up, so it follows.) */
+  translate: 0 calc(var(--space-48) + var(--space-40));
+  pointer-events: none;
+  opacity: 0.24;
+  /* Both ends fade out, so the white logos never run into the pale rim of the gradient. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
+}
+
+.logo {
+  flex: none;
+  width: auto;
+  height: var(--space-32);
+}
+
+/* Reduced motion: the logos sit still, wrapped and centred. */
+.logos:not([data-running]) {
+  padding-inline: var(--space-24);
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.logos:not([data-running]) .logoGroup {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-16) var(--space-32);
 }
 
 /* ---------- ≥ 384px ---------- */
@@ -354,5 +484,20 @@
 
   .lineRight {
     grid-area: 2 / 3;
+  }
+
+  /* Out of flow, so the band keeps its artboard position. The row is centred at a fixed
+     share of the hero's height (76%) — like the gradient itself — so it always sits just
+     above the horizon. */
+  .logos {
+    --ticker-gap: var(--space-96);
+    position: absolute;
+    bottom: calc(24% - var(--space-40) / 2);
+    left: 0;
+    margin: 0;
+  }
+
+  .logo {
+    height: var(--space-40);
   }
 }

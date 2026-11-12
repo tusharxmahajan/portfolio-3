@@ -46,11 +46,18 @@ function modeFor(target) {
   return el.dataset.cursor || 'scale'
 }
 
-// Text links get the underline (opt out with data-cursor="default" or "hide").
+// Text links get the underline. Links that set any data-cursor mode (e.g. pill buttons
+// with data-cursor="scale") opt out.
 function underlineLinkFor(target) {
   const link = target instanceof Element ? target.closest('a[href]') : null
-  if (!link || link.dataset.cursor === 'default' || link.dataset.cursor === 'hide') return null
+  if (!link || link.dataset.cursor) return null
   return link.textContent.trim() ? link : null
+}
+
+// Elements marked data-surface="dark" (e.g. a dark button on the white page) keep the
+// cursor white, whatever the background behind them.
+function isOnDarkSurface(target) {
+  return target instanceof Element && Boolean(target.closest('[data-surface="dark"]'))
 }
 
 // Underline geometry for a link, in viewport px: centre x/y and width.
@@ -85,6 +92,7 @@ export default function Cursor({ isLightAt }) {
       let started = false
       let mode = null
       let light = null
+      let onDarkSurface = false
 
       // Underline morph: m blends dot (0) → underline (1). When moving straight from one link
       // to another, the underline slides from a snapshot of where it was (p: 0 → 1).
@@ -154,6 +162,7 @@ export default function Cursor({ isLightAt }) {
         if (!started) return
         setMode(modeFor(e.target))
         setUnderline(underlineLinkFor(e.target))
+        onDarkSurface = isOnDarkSurface(e.target)
       }
 
       const tick = (_time, deltaMs) => {
@@ -186,7 +195,7 @@ export default function Cursor({ isLightAt }) {
         }
         ring.current.style.transform = `translate3d(${ringPos.x}px, ${ringPos.y}px, 0)`
 
-        const nextLight = Boolean(isLightAt?.(x, y))
+        const nextLight = !onDarkSurface && Boolean(isLightAt?.(x, y))
         if (nextLight !== light) {
           light = nextLight
           root.current.classList.toggle(styles.light, light)

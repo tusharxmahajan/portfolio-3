@@ -1,0 +1,37 @@
+/* Endless ticker — animated by Ticker.jsx. While running, the root carries [data-running]. */
+.ticker {
+  overflow: hidden;
+}
+
+.track {
+  display: flex;
+}
+
+.group {
+  display: flex;
+  flex: auto;
+  align-items: center;
+  gap: var(--ticker-gap, 0px);
+}
+
+/* The copy only exists to fill the loop. */
+.clone {
+  display: none;
+}
+
+/* Running: one long row. Each set carries a trailing gap, so set + gap is exactly one lap. */
+/* (Positioned, so the items' offsets — used for a `path` — are measured from the track.) */
+.ticker[data-running] .track {
+  position: relative;
+  width: max-content;
+  will-change: transform;
+}
+
+.ticker[data-running] .group {
+  flex: none;
+  padding-right: var(--ticker-gap, 0px);
+}
+
+.ticker[data-running] .clone {
+  display: flex;
+}
