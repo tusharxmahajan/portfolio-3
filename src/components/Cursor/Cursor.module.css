@@ -26,11 +26,12 @@
   will-change: transform;
 }
 
+/* Positioned (top-left) and sized by Cursor.jsx. The pill radius keeps it a circle as the
+   4px dot and gives the underline rounded ends while it morphs. */
 .dot {
   width: var(--dot);
   height: var(--dot);
-  margin: calc(var(--dot) / -2) 0 0 calc(var(--dot) / -2);
-  border-radius: 50%;
+  border-radius: 999px;
   background: currentColor;
 }
 
