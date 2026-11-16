@@ -1,0 +1,38 @@
+/* Light pulse: a 28px glowing dash (glow: ConnectorLine.jsx) that travels each 451px route,
+   far end → headline, every 3.2s — quickening, then settling as it arrives. The 1000px gap
+   is longer than the route, so only one dash shows at a time; the dash starts hidden just
+   before the route (offset 60) and finishes just past its end (offset −(451 + 40)), so it's
+   never parked at either end between laps. Its colour, the client logos' gradient, is set
+   on the SVG (ConnectorLine.jsx). */
+.pulse {
+  opacity: 0.2;
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-dasharray: 28 1000;
+  stroke-dashoffset: 60;
+  pointer-events: none;
+  animation: connector-flow 8s cubic-bezier(0.5, 0, 0.3, 1) infinite;
+}
+
+@keyframes connector-flow {
+  from {
+    stroke-dashoffset: 60;
+  }
+
+  to {
+    stroke-dashoffset: -491;
+  }
+}
+
+/* Paused while the hero is covered by the rest of the page (Hero.jsx). */
+:global([data-covered]) .pulse {
+  animation-play-state: paused;
+}
+
+/* Reduced motion: no pulses, just the lines. */
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+    opacity: 0;
+  }
+}

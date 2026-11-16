@@ -9,8 +9,9 @@
 .work {
   position: relative;
   z-index: 2;
-  /* (The header adds 24px of its own above the title: 96px in all.) */
-  padding: var(--space-72) 0 var(--space-128);
+  /* No space of its own above the title: the header's 24px follows the room the morph
+     slider leaves under its cards. */
+  padding: 0 0 var(--space-128);
   color: var(--ink);
   background: var(--color-white);
 }
@@ -37,8 +38,10 @@
   margin-bottom: var(--space-64);
 }
 
-/* 32/40 at every size (shrinking to 14/22 as the header sticks). Filled with a diagonal cyan → navy gradient running top-left to
-   bottom-right; the box hugs the words so the gradient spans just the title. */
+/* 32/40 at every size (shrinking to 14/22 as the header sticks). Filled with the client logos'
+   gradient (Hero.module.css) one step darker along the hero palette — cyan → dark cyan —
+   running diagonally top-left to bottom-right; the box hugs the words so the gradient spans
+   just the title. */
 .heading {
   font-family: var(--font-sans);
   font-size: 32px;
@@ -47,7 +50,7 @@
   font-weight: 400;
   text-align: center;
   color: transparent;
-  background-image: linear-gradient(101deg, var(--color-cyan) 0%, var(--color-navy) 100%);
+  background-image: linear-gradient(101deg, var(--color-cyan) 0%, var(--color-cyan-dark) 100%);
   -webkit-background-clip: text;
   background-clip: text;
 }
@@ -209,7 +212,7 @@
 
 @media (min-width: 640px) {
   .work {
-    padding: calc(var(--space-128) - var(--space-24)) 0 var(--space-160);
+    padding: var(--space-24) 0 var(--space-160); /* 48px above the title */
   }
 
   .inner {

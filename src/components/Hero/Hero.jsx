@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import iDot from '../../assets/i-dot.svg'
 import Ticker from '../Ticker/Ticker.jsx'
 import ConnectorLine from './ConnectorLine.jsx'
@@ -14,6 +14,10 @@ const LINKS = [
 ]
 
 const FOCUS_AREAS = ['B2B SaaS', 'heavy data', 'complex workflows']
+
+// When each connector pulse first sets off (s), per branch, top first: left line, then right.
+// Uneven, so no two fire together.
+const PULSE_DELAYS = { left: [0, 2.5], right: [1.5, 4] }
 
 function isExternal(href) {
   return href.startsWith('http')
@@ -41,29 +45,48 @@ function useHeroHeight(ref) {
   }, [ref])
 }
 
+// Marks the hero data-covered while its gradient is out of view: the content, pinned
+// underneath, is covered by the page by then, so its looping animations (the connector
+// pulses) pause.
+function useCoveredFlag(heroRef, backdropRef) {
+  useEffect(() => {
+    const hero = heroRef.current
+    const observer = new IntersectionObserver(([entry]) => {
+      hero.toggleAttribute('data-covered', !entry.isIntersecting)
+    })
+    observer.observe(backdropRef.current)
+    return () => {
+      observer.disconnect()
+      hero.removeAttribute('data-covered')
+    }
+  }, [heroRef, backdropRef])
+}
+
 const FLAT = { y: 0, angle: 0 }
 
 // The path the logos travel along: the gradient's colour band through their row, which runs
-// parallel to its bottom curve (see bandThrough). Measured from the hero's box and the row's
-// place in it, and again whenever the hero or anything in it resizes.
-function useLogoPath(heroRef) {
+// parallel to its bottom curve (see bandThrough) — here, just outside it. Measured against
+// the backdrop (which, like the logos, scrolls with the page), and again whenever either
+// resizes.
+function useLogoPath(backdropRef, clientsRef) {
   const band = useRef(null)
 
   useLayoutEffect(() => {
-    const hero = heroRef.current
-    const ticker = hero.querySelector('[data-anim="logos"]')
-    const logo = ticker.querySelector('img')
+    const backdrop = backdropRef.current
+    const ticker = clientsRef.current.querySelector('[data-anim="logos"]')
+    const logo = ticker.querySelector('[role="img"]')
     const measure = () => {
-      const box = hero.getBoundingClientRect()
+      const box = backdrop.getBoundingClientRect()
       // The row runs along the ticker's bottom edge (the space above is room for the curve).
       const row = ticker.getBoundingClientRect().bottom - logo.offsetHeight / 2 - box.top
       band.current = bandThrough(box.width, box.height, row)
     }
     measure()
     const observer = new ResizeObserver(measure)
-    for (const el of [hero, ...hero.children]) observer.observe(el)
+    observer.observe(backdrop)
+    observer.observe(ticker)
     return () => observer.disconnect()
-  }, [heroRef])
+  }, [backdropRef, clientsRef])
 
   return useCallback((x) => band.current?.(x) ?? FLAT, [])
 }
@@ -74,14 +97,18 @@ function useLogoPath(heroRef) {
  *   section   the content — sticky, so it holds still
  *   horizon   the gradient's bottom curve — scrolls with the backdrop, above the content,
  *             so as the gradient moves up its curve envelops the content
+ * followed by the client logos, just under the curve (and, with the hero, filling the first
+ * screen), travelling along it.
  */
 export default function Hero() {
   const heroRef = useRef(null)
   const backdropRef = useRef(null)
   const horizonRef = useRef(null)
+  const clientsRef = useRef(null)
   useHeroHeight(heroRef)
-  useHeroIntro(heroRef, { backdropRef, horizonRef })
-  const logoPath = useLogoPath(heroRef)
+  useCoveredFlag(heroRef, backdropRef)
+  useHeroIntro(heroRef, { backdropRef, horizonRef, clientsRef })
+  const logoPath = useLogoPath(backdropRef, clientsRef)
 
   return (
     <>
@@ -151,33 +178,12 @@ export default function Hero() {
           </nav>
 
           <div className={`${styles.line} ${styles.lineLeft}`} aria-hidden="true">
-            <ConnectorLine data-anim="line" />
+            <ConnectorLine data-anim="line" pulseDelays={PULSE_DELAYS.left} />
           </div>
           <div className={`${styles.line} ${styles.lineRight}`} aria-hidden="true">
-            <ConnectorLine data-anim="line" />
+            <ConnectorLine data-anim="line" pulseDelays={PULSE_DELAYS.right} />
           </div>
         </div>
-
-        {/* The logos travel along the gradient's curve. */}
-        <Ticker
-          className={styles.logos}
-          groupClassName={styles.logoGroup}
-          speed={16}
-          path={logoPath}
-          data-anim="logos"
-        >
-          {LOGOS.map(({ name, src, width, height }) => (
-            <img
-              key={name}
-              className={styles.logo}
-              src={src}
-              alt={name}
-              width={width}
-              height={height}
-              decoding="async"
-            />
-          ))}
-        </Ticker>
       </section>
 
       <div ref={backdropRef} className={styles.backdrop} data-anim="backdrop" aria-hidden="true" />
@@ -190,6 +196,28 @@ export default function Hero() {
             <path clipRule="evenodd" d={HORIZON_HIT} />
           </clipPath>
         </svg>
+      </div>
+
+      {/* Client logos, just under the gradient's curve, travelling along it. Each is its
+          white artwork used as a mask (see .logo). */}
+      <div ref={clientsRef} className={styles.clients}>
+        <Ticker
+          className={styles.logos}
+          groupClassName={styles.logoGroup}
+          speed={16}
+          path={logoPath}
+          data-anim="logos"
+        >
+          {LOGOS.map(({ name, src, width, height }) => (
+            <span
+              key={name}
+              className={styles.logo}
+              role="img"
+              aria-label={name}
+              style={{ '--logo': `url("${src}")`, aspectRatio: `${width} / ${height}` }}
+            />
+          ))}
+        </Ticker>
       </div>
     </>
   )

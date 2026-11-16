@@ -26,6 +26,8 @@
   --color-white: #fff;
   --color-navy: #03045e;
   --color-cyan: #00b4d8;
+  --color-cyan-light: #48cae4;
+  --color-cyan-dark: #0096c7;
   --text-label: rgb(255 255 255 / 0.72);
   --text-muted: rgb(255 255 255 / 0.4);
   --text-hover: rgb(255 255 255 / 0.96);

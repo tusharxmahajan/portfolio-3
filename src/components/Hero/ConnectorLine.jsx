@@ -1,4 +1,20 @@
 import { useId } from 'react'
+import styles from './ConnectorLine.module.css'
+
+// Artboard geometry (446 × 32.75). The headline end is on the right (x = 446); the right-hand
+// connector is this one mirrored.
+const WIDTH = 446
+const FORK_Y = 16.375 // the stem's height: where the branches meet
+const FORK_X = 280
+const CURVE_X = 264 // the S-curves' control points
+const RUN_X = 248 // where each S-curve meets its straight run
+const RUNS = [0.375, 32.375] // the branches' straight runs, top and bottom
+
+// Drawn outward by the intro: headline end → fork, then fork → S-curve → far end.
+const STEM = `M${WIDTH} ${FORK_Y}H${FORK_X}`
+const branch = (y) => `M${FORK_X} ${FORK_Y}C${CURVE_X} ${FORK_Y} ${CURVE_X} ${y} ${RUN_X} ${y}H0`
+// A pulse's route: one branch and the stem, the other way — far end → fork → headline.
+const route = (y) => `M0 ${y}H${RUN_X}C${CURVE_X} ${y} ${CURVE_X} ${FORK_Y} ${FORK_X} ${FORK_Y}H${WIDTH}`
 
 /**
  * Connector line from the Figma artboard (446 × 32.75) with S-curve forks.
@@ -10,11 +26,19 @@ import { useId } from 'react'
  *
  * The strokes are solid white; the fade and 20% opacity are applied once to the group
  * (alpha mask + group opacity), so the overlapping branches at the fork don't stack.
+ *
+ * Over them, a light pulse per branch (data-part="pulse"): a short glowing dash that runs in
+ * from the far end, through the fork, into the headline, on a loop (ConnectorLine.module.css).
+ * `pulseDelays` staggers them: seconds, one per branch, top first. Coloured with the client
+ * logos' gradient laid along the line — light cyan at the far end → cyan at the headline —
+ * so each pulse deepens as it travels in; and under the same fade, so it brightens too.
  */
-export default function ConnectorLine(props) {
+export default function ConnectorLine({ pulseDelays = [0, 0], ...props }) {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '')
   const fadeId = `connector-fade-${uid}`
   const maskId = `connector-mask-${uid}`
+  const glowId = `connector-glow-${uid}`
+  const pulseColourId = `connector-pulse-${uid}`
 
   return (
     <svg
@@ -32,23 +56,59 @@ export default function ConnectorLine(props) {
           <stop stopColor="#fff" stopOpacity="0" />
           <stop offset="1" stopColor="#fff" />
         </linearGradient>
+        <linearGradient
+          id={pulseColourId}
+          x1="0"
+          y1="0"
+          x2="446"
+          y2="0"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop style={{ stopColor: 'var(--color-cyan-light)' }} />
+          <stop offset="1" style={{ stopColor: 'var(--color-cyan)' }} />
+        </linearGradient>
+        {/* Room around the box for the pulses' glow. */}
         <mask
           id={maskId}
           maskUnits="userSpaceOnUse"
-          x="0"
-          y="-1"
-          width="446"
-          height="34.75"
+          x="-8"
+          y="-8"
+          width="462"
+          height="48.75"
           style={{ maskType: 'alpha' }}
         >
-          <rect x="0" y="-1" width="446" height="34.75" fill={`url(#${fadeId})`} />
+          <rect x="-8" y="-8" width="462" height="48.75" fill={`url(#${fadeId})`} />
         </mask>
+        <filter
+          id={glowId}
+          filterUnits="userSpaceOnUse"
+          x="-8"
+          y="-8"
+          width="462"
+          height="48.75"
+          colorInterpolationFilters="sRGB"
+        >
+          <feDropShadow dx="0" dy="0" stdDeviation="0.5" floodColor="#5fe6ff" />
+        </filter>
       </defs>
 
       <g mask={`url(#${maskId})`} opacity="0.2" stroke="#fff" strokeWidth="0.75">
-        <path data-part="stem" d="M446 16.375H280" />
-        <path data-part="branch" d="M280 16.375C264 16.375 264 0.375 248 0.375H0" />
-        <path data-part="branch" d="M280 16.375C264 16.375 264 32.375 248 32.375H0" />
+        <path data-part="stem" d={STEM} />
+        {RUNS.map((y) => (
+          <path key={y} data-part="branch" d={branch(y)} />
+        ))}
+      </g>
+
+      <g mask={`url(#${maskId})`} filter={`url(#${glowId})`} stroke={`url(#${pulseColourId})`}>
+        {RUNS.map((y, i) => (
+          <path
+            key={y}
+            className={styles.pulse}
+            data-part="pulse"
+            d={route(y)}
+            style={{ animationDelay: `${pulseDelays[i]}s` }}
+          />
+        ))}
       </g>
     </svg>
   )

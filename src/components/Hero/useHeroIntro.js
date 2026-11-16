@@ -16,9 +16,9 @@ const T = {
   headlineLead: 2, // headline starts this long before the gradient finishes settling
   headline: 2,
   headlineStagger: 0.6,
+  linesLead: 1.35, // connector lines start this long before the headline finishes
   lines: 2,
   meta: 1,
-  metaStagger: 0.24,
   logos: 1.2,
   logoStagger: 0.08,
   overlap: 0.6, // after the gradient, each step starts this much before the previous one ends
@@ -27,12 +27,7 @@ const T = {
 const BLUR = 'blur(16px)'
 
 const DESKTOP = '(min-width: 1120px)'
-const TABLET_UP = '(min-width: 640px)'
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)'
-
-// Meta blocks appear in reading order: Z-pattern on the grid layouts, top-to-bottom when stacked.
-const META_ORDER_GRID = ['hi', 'links', 'work', 'previously']
-const META_ORDER_STACK = ['hi', 'work', 'previously', 'links']
 
 // Start once the web fonts are in, so the headline doesn't swap fonts mid-fade.
 function whenFontsReady(timeoutMs = 1500) {
@@ -47,15 +42,18 @@ function whenFontsReady(timeoutMs = 1500) {
 
 /**
  * Hero intro: gradient grows from its centre → headline blur-in (overlapping the gradient's
- * settle) → connector lines draw → meta fade-in → logos fade in out of a blur, one by one.
+ * settle) → connector lines draw (then their pulses start) → the rest of the text (the meta blocks) fades in, all at
+ * once → logos fade in out of a blur, one by one.
  * Content is found by data attributes inside `scope`:
- *   data-anim="headline" | "line" | "logos" (the ticker; its <img>s are animated), and
- *   data-meta="<key>" for the meta blocks.
+ *   data-anim="headline" | "line", and
+ *   data-meta for the meta blocks.
  * The gradient lives outside it: `backdropRef` (the gradient) and `horizonRef` (its bottom
- * curve, drawn over the content) grow together so they always line up.
+ * curve, drawn over the content) grow together so they always line up. So do the logos,
+ * under the curve: `clientsRef`, holding the ticker (data-anim="logos") and its logos
+ * (role="img").
  * Without JS, or with reduced motion, the hero simply renders in its final state.
  */
-export function useHeroIntro(scope, { backdropRef, horizonRef }) {
+export function useHeroIntro(scope, { backdropRef, horizonRef, clientsRef }) {
   useGSAP(
     () => {
       if (window.matchMedia(REDUCED_MOTION).matches) return
@@ -66,10 +64,10 @@ export function useHeroIntro(scope, { backdropRef, horizonRef }) {
       const lines = q('[data-anim="line"]')
       const stems = lines.map((svg) => svg.querySelector('[data-part="stem"]'))
       const branches = lines.flatMap((svg) => [...svg.querySelectorAll('[data-part="branch"]')])
-      const metaOrder = window.matchMedia(TABLET_UP).matches ? META_ORDER_GRID : META_ORDER_STACK
-      const metas = metaOrder.map((key) => q(`[data-meta="${key}"]`)[0])
+      const pulses = lines.flatMap((svg) => [...svg.querySelectorAll('[data-part="pulse"]')])
+      const metas = q('[data-meta]')
       // The ticker holds the logos twice (the second set is its loop copy).
-      const logos = q('[data-anim="logos"] img')
+      const logos = [...clientsRef.current.querySelectorAll('[data-anim="logos"] [role="img"]')]
       const logosPerSet = logos.length / 2
       const showLines = window.matchMedia(DESKTOP).matches
 
@@ -111,7 +109,9 @@ export function useHeroIntro(scope, { backdropRef, horizonRef }) {
       //    first, then both S-curve branches together. Each segment's duration is its
       //    path length, so the pen moves at one constant speed through the fork; a single
       //    ease over the whole stroke then gives it a smooth start and finish.
+      //    Their light pulses (a CSS loop) hold until the lines are drawn, then set off.
       if (showLines) {
+        gsap.set(pulses, { animationPlayState: 'paused' })
         const draw = gsap
           .timeline({ paused: true })
           .fromTo(
@@ -126,15 +126,16 @@ export function useHeroIntro(scope, { backdropRef, horizonRef }) {
           )
         tl.add(
           draw.tweenFromTo(0, draw.duration(), { duration: T.lines, ease: 'sine.inOut' }),
-          `-=${T.overlap}`,
+          `-=${T.linesLead}`,
         )
+        tl.call(() => pulses.forEach((pulse) => pulse.style.removeProperty('animation-play-state')))
       }
 
-      // 4. Meta blocks fade in one by one.
+      // 4. The rest of the text — the meta blocks — fades in all at once.
       tl.fromTo(
         metas,
         { opacity: 0 },
-        { opacity: 1, duration: T.meta, stagger: T.metaStagger, ease: 'power1.out' },
+        { opacity: 1, duration: T.meta, ease: 'power1.out' },
         `-=${T.overlap}`,
       )
 
@@ -162,6 +163,6 @@ export function useHeroIntro(scope, { backdropRef, horizonRef }) {
         cancelled = true
       }
     },
-    { scope, dependencies: [backdropRef, horizonRef] },
+    { scope, dependencies: [backdropRef, horizonRef, clientsRef] },
   )
 }

@@ -5,6 +5,13 @@ import { useEffect } from 'react'
 
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)'
 
+let current = null
+
+/** The running Lenis instance (null with reduced motion), for scrolling the page from code. */
+export function getLenis() {
+  return current
+}
+
 /**
  * Lenis smooth scrolling for the page, driven from GSAP's ticker so scrolling and the
  * GSAP animations (intro, tickers, cursor) update in the same frame.
@@ -20,12 +27,14 @@ export function useSmoothScroll() {
       wheelMultiplier: 0.5, // scroll distance per wheel tick, relative to native
       anchors: { offset: -48 },
     })
+    current = lenis
     const raf = (time) => lenis.raf(time * 1000)
     gsap.ticker.add(raf)
 
     return () => {
       gsap.ticker.remove(raf)
       lenis.destroy()
+      current = null
     }
   }, [])
 }

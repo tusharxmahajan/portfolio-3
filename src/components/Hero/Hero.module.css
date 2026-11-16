@@ -19,6 +19,19 @@
    the gradient — and its curve — overtake it. It's sticky (holding still) plus a scroll-
    linked drift upward. A hero taller than the viewport first scrolls normally until its
    bottom edge is in view; the parallax starts from there. */
+/* The first screen holds the hero — the gradient — and, under its curve, the client logos.
+   The hero is the screen's height less the logos' band — curve → logos (--clients-gap), the
+   logos (--clients-row), logos → fold (--clients-end) — plus --hero-extra, by which the band
+   runs past the first screen. */
+.hero,
+.clients {
+  --clients-gap: var(--space-48);
+  --clients-row: var(--space-32);
+  --clients-end: var(--space-32);
+  --clients-h: calc(var(--clients-gap) + var(--clients-row) + var(--clients-end));
+  --hero-extra: var(--space-48);
+}
+
 .hero {
   --parallax-speed: 0.3;
   --hero-overflow: max(0px, var(--hero-h, 100svh) - 100svh);
@@ -29,8 +42,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  min-height: 100svh;
+  min-height: calc(100vh - var(--clients-h) + var(--hero-extra));
+  min-height: calc(100svh - var(--clients-h) + var(--hero-extra));
   padding: var(--space-112) 0 var(--space-160);
   overflow: hidden;
   isolation: isolate;
@@ -287,32 +300,61 @@
   transform: scaleX(-1);
 }
 
-/* ---------- Logo ticker (inside the gradient, below the band) ---------- */
+/* ---------- Client logos (under the gradient's bottom curve) ---------- */
 
-/* The logos rise along the gradient's curve towards the screen edges (Hero.jsx) — by up to
-   about a quarter of the hero's height, tilted. The ticker clips to its box (and its edge
-   fade), so the box reaches that far up over the content above, without taking its space or
-   its clicks; the row itself runs along the box's bottom edge. */
+/* In the flow right after the hero, so they scroll with the gradient and stay just under
+   its curve; on the first screen they sit at the bottom, under the gradient's lowest point.
+   Opaque white, and above the pinned hero content like the horizon, so that content stays
+   covered as it scrolls under. */
+.clients {
+  position: relative;
+  z-index: 2;
+  padding: var(--clients-gap) 0 var(--clients-end);
+  background: var(--color-white);
+}
+
+/* The logos travel along the curve (Hero.jsx), rising towards the screen edges by up to
+   about a sixth of the hero's height, tilted. The ticker clips to its box (and its edge
+   fade), so the box reaches up over the gradient's white corners, without taking space or
+   clicks; the row runs along the box's bottom edge. */
 .logos {
-  --curve-room: calc(0.32 * var(--hero-h, 100svh));
+  --curve-room: calc(0.24 * var(--hero-h, 100svh));
   --ticker-gap: var(--space-72);
-  width: 100%;
   padding-top: var(--curve-room);
-  margin-top: calc(var(--space-64) - var(--curve-room));
-  /* Lowered 88px from its place in the layout, nearer the gradient's rim. (The curve is
-     measured from where the row ends up, so it follows.) */
-  translate: 0 calc(var(--space-48) + var(--space-40));
+  margin-top: calc(-1 * var(--curve-room));
   pointer-events: none;
-  opacity: 0.24;
-  /* Both ends fade out, so the white logos never run into the pale rim of the gradient. */
+  /* Soft, so the logos sit back behind the content. (On the row, not the logos: the intro
+     fades each logo in to full strength, and that stays relative to this.) */
+  opacity: 0.5;
+  /* Both ends fade out. */
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
   mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
 }
 
+/* Each logo is its (white) artwork used as a mask over a smooth gradient of the two rim
+   colours nearest the logos — light cyan → cyan (the "Selected work" title runs a step darker) —
+   at its own proportions (set inline).
+   A slight glass finish over it: the colour is a touch see-through, with a soft sheen over
+   the upper half that ends in a gentle horizon, and a faint glow up from the bottom edge. */
 .logo {
   flex: none;
-  width: auto;
-  height: var(--space-32);
+  height: var(--clients-row);
+  background-image:
+    linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.4) 0%,
+      rgb(255 255 255 / 0.12) 46%,
+      rgb(255 255 255 / 0) 54%,
+      rgb(255 255 255 / 0) 76%,
+      rgb(255 255 255 / 0.16) 100%
+    ),
+    linear-gradient(
+      101deg,
+      color-mix(in srgb, var(--color-cyan-light) 88%, transparent),
+      color-mix(in srgb, var(--color-cyan) 88%, transparent)
+    );
+  -webkit-mask: var(--logo) center / contain no-repeat;
+  mask: var(--logo) center / contain no-repeat;
 }
 
 /* Reduced motion: the logos sit still, wrapped and centred. */
@@ -435,8 +477,10 @@
     row-gap: var(--space-24);
     max-width: 1512px;
     padding-inline: var(--space-40);
-    /* Lifts the band's centre 112px above the viewport centre. */
-    margin-bottom: calc(2 * var(--space-112));
+    /* Lifts the band's centre 64px above the hero's centre, onto the gradient's optical
+       centre: its curve rises towards the sides and its dark core is at the top, so its
+       weight sits above the box's middle. */
+    margin-bottom: var(--space-128);
   }
 
   .title {
@@ -486,18 +530,12 @@
     grid-area: 2 / 3;
   }
 
-  /* Out of flow, so the band keeps its artboard position. The row is centred at a fixed
-     share of the hero's height (76%) — like the gradient itself — so it always sits just
-     above the horizon. */
-  .logos {
-    --ticker-gap: var(--space-96);
-    position: absolute;
-    bottom: calc(24% - var(--space-40) / 2);
-    left: 0;
-    margin: 0;
+  .hero,
+  .clients {
+    --clients-row: var(--space-40);
   }
 
-  .logo {
-    height: var(--space-40);
+  .logos {
+    --ticker-gap: var(--space-96);
   }
 }
