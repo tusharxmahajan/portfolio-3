@@ -1,8 +1,9 @@
 import Cursor from './components/Cursor/Cursor.jsx'
 import Hero from './components/Hero/Hero.jsx'
 import { isHeroLightAt } from './components/Hero/gradient.js'
-import MorphSlider from './components/MorphSlider/MorphSlider.jsx'
-import Work from './components/Work/Work.jsx'
+// import MorphSlider from './components/MorphSlider/MorphSlider.jsx'
+import Statement from './components/Statement/Statement.jsx'
+// import Work from './components/Work/Work.jsx'
 import { useSmoothScroll } from './hooks/useSmoothScroll.js'
 
 export default function App() {
@@ -12,8 +13,9 @@ export default function App() {
     <>
       <main>
         <Hero />
-        <MorphSlider />
-        <Work />
+        <Statement />
+        {/* <MorphSlider /> */}
+        {/* <Work /> */}
       </main>
       <Cursor isLightAt={isHeroLightAt} />
     </>

@@ -116,12 +116,12 @@ export default function Hero() {
         <div className={styles.band}>
           <h1 className={styles.title}>
             <span className={styles.headline} data-anim="headline">
-              I dez
+              I des
               <span className={styles.dotted}>
                 i
                 <img className={styles.dot} src={iDot} width="8" height="8" alt="" aria-hidden="true" />
               </span>
-              ne for humans
+              gn for humans
             </span>
             <span className={styles.tagline} data-anim="headline">
               &amp; for machines

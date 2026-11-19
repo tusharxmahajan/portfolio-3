@@ -190,7 +190,7 @@
   background-clip: text;
 }
 
-/* The 8px cyan dot sits on the tittle of the "i" in "dezine".
+/* The 8px cyan dot sits on the tittle of the "i" in "design".
    --dot-x / --dot-y are the tittle's centre, measured from the glyph box at each headline
    size. Google Sans Flex uses optical sizing, so the "i" changes proportion per size and
    each step needs its own values. These are optical alignments, not grid spacing. */

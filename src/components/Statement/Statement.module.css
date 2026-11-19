@@ -1,0 +1,89 @@
+/*
+ * Statement (Statement.jsx) — between the hero and the morph slider.
+ *   base      < 640px   24/32 lead
+ *   ≥ 640px   tablet    32/40 lead
+ *   ≥ 1120px  desktop   the lead breaks before "product management", its box hugs the words
+ */
+
+/* Above the hero's content, which stays pinned underneath for the rest of the page. 480px
+   tall, with everything — the line included — centred in it. */
+.statement {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 480px;
+  background: var(--color-white);
+  color: var(--ink);
+  text-align: center;
+}
+
+/* Cyan → navy, top left to bottom right (5° down), across the words' box. */
+.lead {
+  width: max-content;
+  max-width: calc(100% - 2 * var(--space-24));
+  font-family: var(--font-sans);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 32px;
+  text-wrap: balance;
+  color: transparent;
+  background-image: linear-gradient(95deg, var(--color-cyan) 0%, var(--color-navy) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* "AI": a step heavier. */
+.strong {
+  font-weight: 500;
+}
+
+/* The desktop line break (before "product management"); below that, the words wrap where
+   they fit. */
+.break {
+  display: none;
+}
+
+/* The hero's mono labels, faint — on a 20px line, a touch tighter, as in the design. */
+.hint {
+  margin-top: var(--space-16);
+  font-family: var(--font-mono);
+  font-size: var(--type-label-size);
+  line-height: 20px;
+  letter-spacing: 0.36px;
+  color: rgb(3 4 94 / 0.2);
+}
+
+/* The connector line (HeadingLine.jsx), the full width of the section, its raised part
+   sized to the hint above. */
+.line {
+  align-self: stretch;
+  margin-top: var(--space-32);
+}
+
+.line svg {
+  display: block;
+}
+
+@media (min-width: 640px) {
+  .lead {
+    max-width: min(720px, 100% - 2 * var(--space-40));
+    font-size: 32px;
+    line-height: 40px;
+  }
+}
+
+@media (min-width: 1120px) {
+  /* Two lines, the second starting at "product management"; the box (and so the gradient)
+     is as wide as the longer one. */
+  .lead {
+    max-width: none;
+    text-wrap: wrap;
+  }
+
+  .break {
+    display: inline;
+  }
+}

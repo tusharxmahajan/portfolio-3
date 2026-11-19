@@ -1,6 +1,7 @@
-import gsap from 'gsap'
 import { useId, useLayoutEffect, useRef } from 'react'
 import { getLenis } from '../../hooks/useSmoothScroll.js'
+import { fadingDash } from '../Hero/fadingDash.js'
+import CardDetails from './CardDetails.jsx'
 import { lensMap } from './lensMap.js'
 import styles from './MorphSlider.module.css'
 import { SLIDES } from './slides.js'
@@ -11,9 +12,6 @@ const REDUCED_MOTION = '(prefers-reduced-motion: reduce)'
 const DRAG_FROM = 5 // px a press travels before it becomes a drag
 const FLICK = 140 // ms of release speed carried on to the next card
 const SIDE_SCALE = 0.06 // cards off-centre shrink by this much
-const PULL_RATE = 0.3 // per frame: how quickly a leaving card's strands stretch thin
-const LANDED = 0.97 // melt at which a card has landed, and wobbles
-const WOBBLE = { decay: 0.13, hz: 4, length: 0.45 } // s, Hz, s
 const LENS = { strength: 0.048, max: 72 } // its bend, as a share of the stage's width; px cap
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
@@ -26,55 +24,57 @@ function scrollPage(top, immediate) {
   else window.scrollTo({ top, behavior: immediate || window.matchMedia(REDUCED_MOTION).matches ? 'auto' : 'smooth' })
 }
 
-// The strands' blobs, fixed per card: a few drips hanging from the picture and rises
-// growing from the text card, roughly in pairs (so they meet and bridge the gap), plus a
-// stray droplet or two that never reach across. All in shares of the card's width/melt.
-function seeded(seed) {
-  return () => {
-    seed = (seed + 0x6d2b79f5) | 0
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+// The connector between a card's halves while they're apart: the hero's connector line,
+// stood upright — a stem down from the middle of the picture that forks, in S-curves, into
+// two runs down to the details. Sizes in px; the fork squeezes as the gap gets short.
+const FORK = { spread: 24, curve: 48 }
+
+function connector(width, height) {
+  const cx = width / 2
+  const squeeze = Math.min(1, height / (2 * FORK.curve))
+  const curve = FORK.curve * squeeze
+  const forkY = (height - curve) / 2
+  const fork = (side) => {
+    const x = cx + side * FORK.spread * squeeze
+    const mid = forkY + curve / 2
+    return `C${cx} ${mid} ${x} ${mid} ${x} ${forkY + curve}V${height}`
+  }
+  return {
+    stem: `M${cx} 0V${forkY}`,
+    branches: [-1, 1].map((side) => `M${cx} ${forkY}${fork(side)}`),
+    // The whole way down each side, for the pulse.
+    routes: [-1, 1].map((side) => `M${cx} 0V${forkY}${fork(side)}`),
   }
 }
 
-function makeBlobs(seed) {
-  const random = seeded(seed * 7919 + 17)
-  const between = (min, max) => min + (max - min) * random()
-  const blobs = []
-  const bridges = 2 + Math.round(random())
-  for (let b = 0; b < bridges; b++) {
-    const x = (b + 0.5) / bridges + between(-0.08, 0.08)
-    const t = between(0.05, 0.45) // how far into the melt it starts reaching
-    blobs.push({ kind: 'drip', x: x + between(-0.03, 0.03), w: between(0.1, 0.24), t, k: between(2.5, 3.5), cap: between(1.05, 1.25) })
-    blobs.push({ kind: 'rise', x: x + between(-0.03, 0.03), w: between(0.13, 0.27), t: t + between(0, 0.05), k: between(2.4, 3.8), cap: between(1.05, 1.25) })
-  }
-  const strays = 1 + Math.round(random())
-  for (let s = 0; s < strays; s++) {
-    blobs.push({ kind: random() < 0.5 ? 'drip' : 'rise', x: between(0.15, 0.85), w: between(0.09, 0.14), t: between(0.2, 0.35), k: between(2.1, 2.5), cap: between(0.55, 0.65) })
-  }
-  return blobs
-}
-
-const BLOBS = SLIDES.map((_, i) => makeBlobs(i + 1))
+// How the connector follows a card's arrival (`m`, 0 apart → 1 in the middle): it draws down
+// from the picture as the halves part — stem, then branches — and a light pulse runs the
+// length of it after. Arriving, the same in reverse.
+const DRAWN_BY = 0.6 // share of the parting by which it's fully drawn
+// The pulse sets off this far into the parting; its length; and from how far down the line it
+// fades out, gone by the time it reaches the details.
+const PULSE = { from: 0.3, dash: 0.15, fade: 0.45 }
+// …drawn in 10 pieces, transparent at its tail to full at its head (fadingDash.js); each line's
+// length counts as 1, and the pattern repeats every 2.15 — so one dash at a time.
+const PULSE_PIECES = fadingDash(PULSE.dash, PULSE.dash + 2, 10)
 
 /**
- * Morph slider: cards whose picture and words melt into one card in the middle and pull
- * apart again as it leaves.
+ * Morph slider: cards whose picture and details come together into one card in the middle,
+ * and part again as it leaves — joined, while apart, by connector lines.
  *
  * Scroll-driven: when the section's top reaches the top of the screen, the slider pins there
  * (filling the screen, cards in the middle) and the page's scroll moves it — one card per
- * card-spacing of scroll — until the last card, then the page carries on. Everything else moves it by scrolling the page to match: drag or
- * flick it, swipe sideways, use the arrow keys, or click a card.
+ * card-spacing of scroll — until the last card, then the page carries on. Everything else
+ * moves it by scrolling the page to match: drag or flick it, swipe sideways, use the arrow
+ * keys, or click a card.
  *
  * Every frame each card gets its distance from the middle, and from it `--m` (0 → 1 as it
  * arrives) and `--me` (the same, eased); the CSS turns those into the gap between picture
- * and details, the joint between them, and the strands' reach. The goo filter melts the
- * strands — and the two halves — together; the lens filter bends the stage's sides.
+ * and details and the joint between them, and JS draws the connector across the gap. The
+ * lens filter bends the stage's sides.
  */
 export default function MorphSlider() {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '')
-  const gooId = `morph-goo-${uid}`
   const lensId = `morph-lens-${uid}`
   const root = useRef(null)
   const stageRef = useRef(null)
@@ -93,20 +93,27 @@ export default function MorphSlider() {
     const map = mapRef.current
     const cards = [...track.children]
     const links = cards.map((card) => card.querySelector('a'))
+    const wires = cards.map((card) => {
+      const svg = card.querySelector('[data-connector]')
+      const [stem, ...branches] = svg.querySelectorAll('[data-part="line"]')
+      const pulses = [...svg.querySelectorAll('[data-part="pulse"]')]
+      return { svg, stem, branches, pulses: pulses.map((el) => ({ el, route: +el.dataset.route })) }
+    })
     const last = cards.length - 1
-    const reduced = window.matchMedia(REDUCED_MOTION)
 
     const state = { pos: 0, active: 0 }
-    const memory = cards.map(() => ({ m: 0, me: 0, at: 0, pull: 0, toward: 0 }))
     let step = 1 // px between card centres
+    let width = 1 // a card's width
+    let gaps = [0, 0] // px between the halves: next to the middle; more per card further out
     let flat = -1 // the lens's flat middle, as last drawn
 
     // ---- Layout ----
     const measure = () => {
       const style = getComputedStyle(section)
       const px = (name) => parseFloat(style.getPropertyValue(name)) || 0
-      const width = cards[0].offsetWidth
+      width = cards[0].offsetWidth
       step = width + px('--spacing')
+      gaps = [px('--gap'), px('--gap-far')]
       const media = cards[0].children[1].offsetHeight
       const body = Math.max(...cards.map((card) => card.lastElementChild.offsetHeight))
       // Room for the widest gaps: next to the middle, and further out.
@@ -131,61 +138,53 @@ export default function MorphSlider() {
       }
     }
 
-    // ---- Wobble: a card squashes and stretches for a moment as it lands ----
-    const wobbles = new Map()
-    const wobbleTick = () => {
-      const now = performance.now()
-      wobbles.forEach(({ amount, start }, card) => {
-        const t = (now - start) / 1000
-        const j = t >= WOBBLE.length ? 0 : amount * Math.exp(-t / WOBBLE.decay) * Math.sin(2 * Math.PI * WOBBLE.hz * t)
-        card.style.setProperty('--j', j.toFixed(5))
-        if (t >= WOBBLE.length) wobbles.delete(card)
+    // ---- Connector: drawn across a card's gap (`height`, px) for its arrival `m` ----
+    const ease = (t) => t * t * (3 - 2 * t)
+    const wire = ({ svg, stem, branches, pulses }, height, m) => {
+      const parted = 1 - m
+      const shown = height >= 1 && parted > 0
+      svg.style.visibility = shown ? '' : 'hidden'
+      if (!shown) return
+      const paths = connector(width, height)
+      // Drawn like a pen stroke from the picture: the stem first, then both branches.
+      const drawn = ease(clamp(parted / DRAWN_BY, 0, 1))
+      stem.setAttribute('d', paths.stem)
+      stem.style.strokeDashoffset = 1 - clamp(drawn * 2, 0, 1)
+      branches.forEach((branch, b) => {
+        branch.setAttribute('d', paths.branches[b])
+        branch.style.strokeDashoffset = 1 - clamp(drawn * 2 - 1, 0, 1)
       })
-      if (!wobbles.size) gsap.ticker.remove(wobbleTick)
-    }
-    const wobble = (card, amount) => {
-      if (!wobbles.size) gsap.ticker.add(wobbleTick)
-      wobbles.set(card, { amount, start: performance.now() })
+      // The pulse: its front (`run`, along the line) from the picture's edge to the details',
+      // fading out over the way down.
+      const run = clamp((parted - PULSE.from) / (1 - PULSE.from), 0, 1)
+      const fade = 1 - ease(clamp((run - PULSE.fade) / (1 - PULSE.fade), 0, 1))
+      pulses.forEach(({ el, route }) => {
+        // Only while it's on its way.
+        el.style.visibility = run > 0 && run < 1 ? '' : 'hidden'
+        el.setAttribute('d', paths.routes[route])
+        el.style.strokeDashoffset = PULSE.dash - run
+        el.style.opacity = fade
+      })
     }
 
     // ---- Render: place every card for the current position ----
     const render = () => {
-      const now = performance.now()
       cards.forEach((card, i) => {
         const d = i - state.pos
         const far = Math.abs(d)
         const m = clamp(1 - far, 0, 1)
         const me = m * m * (3 - 2 * m)
-        const mem = memory[i]
-
-        // Leaving: its strands stretch thinner and further before they snap.
-        if (m < mem.m - 1e-4) mem.toward = 1
-        else if (m > mem.m + 1e-4) mem.toward = 0
-        mem.pull += (mem.toward - mem.pull) * PULL_RATE
-        if (m <= 0 || m >= 1) mem.pull = mem.toward = 0
-
-        // Landing: wobble, harder the faster it came in.
-        if (!reduced.matches && mem.at && mem.me < LANDED && me >= LANDED) {
-          const speed = ((me - mem.me) / Math.max(1, now - mem.at)) * 1000
-          wobble(card, Math.min(0.032, 0.012 + speed * 0.004))
-        }
-        mem.m = m
-        mem.me = me
-        mem.at = now
+        const beyond = clamp(far - 1, 0, 2)
 
         const s = card.style
         s.setProperty('--x', `${(d * step).toFixed(2)}px`)
         s.setProperty('--s', (1 - SIDE_SCALE * Math.min(far, 1)).toFixed(4))
         s.setProperty('--m', m.toFixed(4))
         s.setProperty('--me', me.toFixed(4))
-        s.setProperty('--pull', mem.pull.toFixed(4))
-        s.setProperty('--far', clamp(far - 1, 0, 2).toFixed(4))
+        s.setProperty('--far', beyond.toFixed(4))
         s.zIndex = String(100 - Math.round(far * 10))
-        // The goo filter only where there's melting to do (and on a hovered neighbour, in
-        // CSS): mid-melt, or strands still stretching as it leaves.
-        card.classList.toggle(styles.melting, (m > 0 && m < 1) || mem.pull > 0.001)
-        card.classList.toggle(styles.near, far < 1.5)
         card.classList.toggle(styles.active, i === state.active)
+        wire(wires[i], gaps[0] * (1 - me) + gaps[1] * beyond, m)
         // Only the card in the middle takes keyboard focus for its link.
         if (links[i]) links[i].tabIndex = i === state.active ? 0 : -1
       })
@@ -295,7 +294,6 @@ export default function MorphSlider() {
 
     return () => {
       resize.disconnect()
-      gsap.ticker.remove(wobbleTick)
       window.removeEventListener('scroll', update)
       stage.removeEventListener('pointerdown', onDown)
       stage.removeEventListener('pointermove', onMove)
@@ -314,24 +312,9 @@ export default function MorphSlider() {
       className={styles.slider}
       aria-roledescription="carousel"
       aria-label="Highlights"
-      style={{ '--goo-filter': `url(#${gooId})`, '--lens-filter': `url(#${lensId})` }}
+      style={{ '--lens-filter': `url(#${lensId})` }}
     >
       <svg className={styles.defs} width="0" height="0" aria-hidden="true" focusable="false">
-        {/* Goo: blur everything (the half-transparent blobs counted as solid), then cut it
-            back to a sharp edge — blobs that overlap flow into one shape. The card's solid
-            parts go back on top, crisp. */}
-        <filter id={gooId} colorInterpolationFilters="sRGB">
-          <feComponentTransfer in="SourceGraphic" result="whole">
-            <feFuncA type="linear" slope="2" />
-          </feComponentTransfer>
-          <feGaussianBlur in="whole" stdDeviation="9" result="blur" />
-          <feColorMatrix in="blur" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -10.5" result="goo" />
-          <feComponentTransfer in="SourceGraphic" result="solid">
-            <feFuncA type="linear" slope="10" intercept="-9" />
-          </feComponentTransfer>
-          <feComposite in="solid" in2="goo" operator="over" />
-        </filter>
-
         {/* Lens: the sides bend outwards (lensMap.js), as through the edge of a lens. */}
         <filter
           ref={lensRef}
@@ -352,7 +335,7 @@ export default function MorphSlider() {
       <div ref={pinRef} className={styles.pin}>
         <div ref={stageRef} className={styles.stage} tabIndex={0} data-cursor="scale">
           <div ref={trackRef} className={styles.track}>
-            {SLIDES.map(({ id, tags, year, title, summary, role, outcome, href, colors }, i) => (
+            {SLIDES.map(({ id, colors, ...details }, i) => (
               <article
                 key={id}
                 className={styles.card}
@@ -362,40 +345,27 @@ export default function MorphSlider() {
                 data-index={i}
                 style={{ '--c0': colors[0], '--c1': colors[1], '--c2': colors[2] }}
               >
-                <div className={styles.goo} aria-hidden="true">
-                  {BLOBS[i].map(({ kind, x, w, t, k, cap }, j) => (
-                    <span
-                      key={j}
-                      className={kind === 'drip' ? styles.drip : styles.rise}
-                      style={{ '--bx': x, '--w': w, '--t': t, '--k': k, '--cap': cap }}
-                    />
-                  ))}
-                </div>
+                {/* Across the gap between the halves (drawn by JS). */}
+                <svg className={styles.connector} aria-hidden="true" focusable="false" data-connector>
+                  <path className={styles.line} data-part="line" pathLength="1" />
+                  <path className={styles.line} data-part="line" pathLength="1" />
+                  <path className={styles.line} data-part="line" pathLength="1" />
+                  {[0, 1].map((route) =>
+                    PULSE_PIECES.map((piece, k) => (
+                      <path
+                        key={`${route}-${k}`}
+                        className={styles.pulse}
+                        data-part="pulse"
+                        data-route={route}
+                        pathLength="1"
+                        style={piece}
+                      />
+                    )),
+                  )}
+                </svg>
                 <div className={styles.media} />
                 <div className={styles.body}>
-                  <p className={`${styles.label} ${styles.meta}`}>
-                    <span>{tags}</span>
-                    <span>{year}</span>
-                  </p>
-                  <p className={styles.title}>{title}</p>
-                  <p className={styles.summary}>{summary}</p>
-                  <dl className={styles.facts}>
-                    <div>
-                      <dt className={styles.label}>Role</dt>
-                      <dd className={styles.factValue}>{role}</dd>
-                    </div>
-                    <div>
-                      <dt className={styles.label}>Outcome</dt>
-                      <dd className={`${styles.factValue} ${styles.outcome}`}>{outcome}</dd>
-                    </div>
-                  </dl>
-                  {href ? (
-                    <a className={styles.link} href={href} draggable={false}>
-                      Open case study →
-                    </a>
-                  ) : (
-                    <span className={styles.link}>Open case study →</span>
-                  )}
+                  <CardDetails {...details} index={i} />
                 </div>
               </article>
             ))}

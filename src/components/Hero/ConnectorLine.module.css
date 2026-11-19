@@ -1,17 +1,19 @@
 /* Light pulse: a 28px glowing dash (glow: ConnectorLine.jsx) that travels each 451px route,
-   far end → headline, every 3.2s — quickening, then settling as it arrives. The 1000px gap
-   is longer than the route, so only one dash shows at a time; the dash starts hidden just
-   before the route (offset 60) and finishes just past its end (offset −(451 + 40)), so it's
-   never parked at either end between laps. Its colour, the client logos' gradient, is set
-   on the SVG (ConnectorLine.jsx). */
+   far end → headline, at a steady speed, every 4s. It's drawn in 2px pieces, transparent at
+   its tail to full at its head, which this one offset moves together (their dash arrays,
+   set in ConnectorLine.jsx, repeat every 1028px — longer than the route, so only one dash
+   shows at a time). The dash starts hidden just before the route (offset 60) and finishes
+   just past its end (offset −(451 + 40)), so it's never parked at either end between laps.
+   Butt caps: each piece's pattern starts with a zero-length dash, which round caps would
+   draw as a dot. Its colour, the client logos' gradient, is set on the SVG
+   (ConnectorLine.jsx). */
 .pulse {
-  opacity: 0.2;
+  opacity: 0.32;
   stroke-width: 1;
-  stroke-linecap: round;
-  stroke-dasharray: 28 1000;
+  stroke-linecap: butt;
   stroke-dashoffset: 60;
   pointer-events: none;
-  animation: connector-flow 8s cubic-bezier(0.5, 0, 0.3, 1) infinite;
+  animation: connector-flow 4s linear infinite;
 }
 
 @keyframes connector-flow {

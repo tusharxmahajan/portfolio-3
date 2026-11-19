@@ -2,18 +2,10 @@
  * Morph slider (MorphSlider.jsx) — between the client logos and "Selected work".
  * Each card is a 16:9 picture over its details. Per card, JS sets:
  *   --x, --s     its place and size (off-centre cards shrink a little)
- *   --m, --me    how far it has arrived in the middle, 0 → 1 (raw / eased): the melt
- *   --pull       0 → 1 while it's leaving: its strands stretch thinner and further
+ *   --m, --me    how far it has arrived in the middle, 0 → 1 (raw / eased): the halves close
  *   --far        how far beyond its neighbours it is (0 → 2): the halves drift further apart
- *   --j          a brief squash and stretch as it lands
+ * and draws the connector lines across the gap between the halves.
  */
-
-/* Hover on a neighbour: it starts to melt, a little (transitions, so it's registered). */
-@property --tease {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 0;
-}
 
 /* Above the hero's content, which stays pinned underneath for the rest of the page. */
 .slider {
@@ -24,7 +16,6 @@
   --gap-far: var(--space-64); /* … and this much more per card further out */
   --inset: var(--space-12); /* the details are narrower than the picture while apart */
   --radius: var(--space-16);
-  --goo: var(--space-32); /* how far the strands' roots tuck under each half */
   --edge: 168px; /* the blurred band at each side (narrower where it'd reach the middle card) */
   --plate: color-mix(in srgb, var(--color-cyan-light) 8%, var(--color-white));
   position: relative;
@@ -83,14 +74,10 @@
   --s: 1;
   --m: 0;
   --me: 0;
-  --pull: 0;
   --far: 0;
-  --j: 0;
-  /* The melt, nudged on by a hover. */
-  --md: calc(var(--m) + var(--tease) * 0.4 * (1 - var(--m)));
   --gap-now: calc(var(--gap) * (1 - var(--me)) + var(--gap-far) * var(--far));
-  /* The corners where the halves meet: rounded apart, swelling mid-melt, square as one. */
-  --joint: calc(var(--radius) * (1 - var(--me)) + 40px * var(--me) * (1 - var(--me)));
+  /* The corners where the halves meet: rounded apart, square as one. */
+  --joint: calc(var(--radius) * (1 - var(--me)));
   position: absolute;
   top: 50%;
   left: 50%;
@@ -98,38 +85,14 @@
   flex-direction: column;
   width: var(--card-w);
   margin-left: calc(var(--card-w) / -2);
-  transform: translate3d(var(--x), -50%, 0) scale(var(--s)) scale(calc(1 + var(--j)), calc(1 - var(--j)));
+  transform: translate3d(var(--x), -50%, 0) scale(var(--s));
   will-change: transform;
   cursor: pointer;
-  /* The goo filter comes off 600ms late, once a hovered neighbour's strands have drawn back. */
-  transition:
-    --tease 600ms cubic-bezier(0.25, 1, 0.5, 1),
-    filter 0s 600ms;
-  transition-behavior: allow-discrete;
 }
 
 .card.active,
 .stage.dragging .card {
   cursor: inherit;
-}
-
-/* Only cards mid-melt carry the (costly) goo filter — set by JS — and it goes on at once. */
-.card.melting {
-  filter: var(--goo-filter);
-  transition:
-    --tease 600ms cubic-bezier(0.25, 1, 0.5, 1),
-    filter 0s;
-}
-
-/* A neighbour starts to melt under the pointer. */
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .stage:not(.dragging) .card.near:not(.active):hover {
-    --tease: 1;
-    filter: var(--goo-filter);
-    transition:
-      --tease 600ms cubic-bezier(0.25, 1, 0.5, 1),
-      filter 0s;
-  }
 }
 
 .stage:focus-visible .card.active .media {
@@ -138,7 +101,7 @@
 }
 
 /* The picture: the card's palette colours left to right, a soft highlight towards the top
-   left (clear of the bottom edge, so the strands match it), and a fine grain. */
+   left, and a fine grain. */
 .media {
   position: relative;
   z-index: 1;
@@ -169,129 +132,40 @@
   background: var(--plate);
 }
 
-/* Details: tags and year · title · summary · role and outcome · case study link. */
-.label {
-  font-family: var(--font-mono);
-  font-size: var(--type-label-size);
-  line-height: var(--type-label-lh);
-  letter-spacing: var(--type-label-tracking);
-  text-transform: uppercase;
-  color: var(--ink-muted);
-}
+/* (The details inside: CardDetails.module.css.) */
 
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  column-gap: var(--space-16);
-  margin-bottom: var(--space-8);
-}
+/* ---------- Connector ---------- */
 
-.title {
-  margin-bottom: var(--space-12);
-  font-size: 24px;
-  font-weight: 500;
-  line-height: 32px;
-  letter-spacing: -0.4px;
-  text-wrap: balance;
-}
-
-.summary {
-  font-size: 16px;
-  line-height: 24px;
-  color: var(--ink-muted);
-}
-
-.facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: var(--space-24);
-  margin: var(--space-32) 0 0;
-  padding-top: var(--space-24);
-  border-top: 1px solid var(--ink-faint);
-}
-
-.factValue {
-  margin: var(--space-4) 0 0;
-  font-size: 16px;
-  line-height: 24px;
-}
-
-.outcome {
-  font-weight: 600;
-}
-
-.link {
-  display: inline-block;
-  margin-top: var(--space-24);
-  font-size: 16px;
-  font-weight: 500;
-  line-height: 24px;
-  color: var(--color-cyan-dark);
-  text-decoration: none;
-}
-
-a.link:hover {
-  color: var(--ink-hover);
-}
-
-/* ---------- Strands ---------- */
-
-/* The band across the gap, tucked under both halves. Its blobs (drips from the picture,
-   rises from the text card, each with its own place, width and timing — set inline) grow
-   across as the card melts; the goo filter flows them into strands, then one card. */
-.goo {
+/* Across the gap between the halves, as tall as it is; JS draws the lines in it (in px) and
+   draws them in and out — stroke-dashoffset, with each path's length counted as 1. */
+.connector {
   position: absolute;
-  z-index: 0;
-  top: calc(var(--media-h) - var(--goo));
+  top: var(--media-h);
   left: 0;
-  right: 0;
-  height: calc(2 * var(--goo) + var(--gap-now));
+  width: 100%;
+  height: var(--gap-now);
+  overflow: visible;
+  fill: none;
   pointer-events: none;
-  transition: visibility 0s;
 }
 
-/* Only there with the goo filter — on their own the blobs would show as they are. Like the
-   filter, they leave 600ms late. */
-.card:not(.melting) .goo {
-  visibility: hidden;
-  transition: visibility 0s 600ms;
+/* The hero's connector lines, in the picture's cyan. */
+.line {
+  stroke: var(--color-cyan-dark);
+  stroke-opacity: 0.4;
+  stroke-width: 1;
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
 }
 
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .stage:not(.dragging) .card.near:not(.active):hover .goo {
-    visibility: visible;
-    transition: visibility 0s;
-  }
-}
-
-.drip,
-.rise {
-  --size: calc((var(--w) + 0.18 * var(--md)) * (1 - 0.5 * var(--pull) * (1 - var(--md))));
-  --reach: calc(
-    var(--gap-now) / 2 *
-      clamp(0, (var(--md) - var(--t) * (1 - 0.7 * var(--pull))) * var(--k), var(--cap) + 0.35 * var(--pull))
-  );
-  position: absolute;
-  left: calc(var(--bx) * 100%);
-  width: calc(var(--card-w) * var(--size));
-  height: calc(var(--goo) + var(--reach));
-  border-radius: 50%;
-  transform: translateX(-50%);
-  /* Half-transparent: the filter counts them, but they never show as they are. */
-  opacity: 0.5;
-}
-
-/* In the picture's colour along its bottom edge, lined up under it. */
-.drip {
-  top: 0;
-  background-image: linear-gradient(90deg, var(--c0), var(--c2));
-  background-size: var(--card-w) 100%;
-  background-position-x: calc(var(--card-w) * (var(--size) / 2 - var(--bx)));
-}
-
-.rise {
-  bottom: 0;
-  background: var(--plate);
+/* Its light pulse: a short bright dash, transparent at its tail, run down the lines by the
+   scroll (JS) — in pieces, each with its own dash array (MorphSlider.jsx). Butt caps: each
+   piece's pattern starts with a zero-length dash, which round caps would draw as a dot. */
+.pulse {
+  stroke: var(--color-cyan);
+  stroke-width: 2;
+  stroke-linecap: butt;
+  stroke-dashoffset: 0.15;
 }
 
 /* ---------- Sides: blurring out towards the edges ---------- */
@@ -357,22 +231,11 @@ a.link:hover {
   .slider {
     --spacing: var(--space-32);
   }
-
-  .title {
-    font-size: 28px;
-    line-height: 36px;
-  }
 }
 
 @media (min-width: 1120px) {
   .slider {
     --card-w: 540px;
     --spacing: var(--space-48);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .card {
-    transition: none;
   }
 }
